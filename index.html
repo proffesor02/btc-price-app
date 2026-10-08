@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BTC Live</title>
+<meta name="description" content="Real-time Bitcoin price in USD and CAD">
+<meta name="theme-color" content="#0b0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BTC Live">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<style>
+  :root {
+    --bg: #0b0d12; --card: #151922; --line: #232836; --text: #f2f4f8; --muted: #8a93a6;
+    --up: #22c55e; --down: #ef4444; --btc: #f7931a; --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh; min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 18px)
+             calc(env(safe-area-inset-bottom) + 18px) calc(env(safe-area-inset-left) + 18px);
+    -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: .2px; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .status { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--up); box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: pulse 2s infinite; }
+  .dot.poll { background: var(--warn); }
+  .dot.off { background: var(--down); }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55);} 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0);} 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0);} }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px 18px 16px; margin-bottom: 14px; }
+  .row1 { display: flex; justify-content: space-between; align-items: baseline; }
+  .label { font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
+  .chg { font-size: 15px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(138,147,166,.15); color: var(--muted); }
+  .chg.up { color: var(--up); background: rgba(34,197,94,.13); }
+  .chg.down { color: var(--down); background: rgba(239,68,68,.13); }
+  .price { font-size: clamp(40px, 13.5vw, 58px); font-weight: 750; letter-spacing: -1px; margin-top: 6px;
+           font-variant-numeric: tabular-nums; line-height: 1.05; transition: color .6s ease; white-space: nowrap; }
+  .price .cur { font-size: .48em; color: var(--muted); font-weight: 600; margin-right: 4px; letter-spacing: 0; }
+  .price.flash-up { color: var(--up); transition: none; }
+  .price.flash-down { color: var(--down); transition: none; }
+  .sub { margin-top: 6px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .spark { margin-top: 12px; height: 56px; width: 100%; display: block; }
+  .spark-cap { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .meta { text-align: center; font-size: 13px; color: var(--muted); margin: 6px 0 20px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+
+  .orders h2 { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .6px; text-transform: uppercase; margin: 0 0 8px;
+               display: flex; justify-content: space-between; align-items: center; }
+  .orders h2 button { background: none; border: 0; color: var(--muted); font-size: 13px; padding: 4px 0 4px 10px; text-decoration: underline; cursor: pointer; }
+  .order { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border: 1px solid var(--line);
+           border-radius: 14px; margin-bottom: 8px; font-size: 15px; font-variant-numeric: tabular-nums; background: rgba(21,25,34,.6); }
+  .order .lvl { font-weight: 650; }
+  .order .dist { color: var(--muted); font-size: 14px; text-align: right; }
+  .order.hit { border-color: rgba(247,147,26,.7); background: rgba(247,147,26,.10); }
+  .order.hit .dist { color: var(--btc); font-weight: 650; }
+  .order.near:not(.hit) { border-color: rgba(247,147,26,.35); }
+  .empty { color: var(--muted); font-size: 14px; }
+  .src { text-align: center; font-size: 11px; color: #5d6577; margin-top: 18px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img src="icons/apple-touch-icon.png" alt="">BTC Live</div>
+  <div class="status"><span id="dot" class="dot"></span><span id="statusText">Connecting…</span></div>
+</header>
+
+<section class="card" id="card-USD">
+  <div class="row1"><span class="label">Bitcoin · USD</span><span class="chg" id="chg-USD">—</span></div>
+  <div class="price" id="price-USD"><span class="cur">US$</span><span class="num">—</span></div>
+  <div class="sub" id="range-USD">&nbsp;</div>
+</section>
+
+<section class="card" id="card-CAD">
+  <div class="row1"><span class="label">Bitcoin · CAD</span><span class="chg" id="chg-CAD">—</span></div>
+  <div class="price" id="price-CAD"><span class="cur">CA$</span><span class="num">—</span></div>
+  <div class="sub" id="range-CAD">&nbsp;</div>
+  <svg class="spark" id="spark" viewBox="0 0 300 56" preserveAspectRatio="none" aria-hidden="true"></svg>
+  <div class="spark-cap" id="sparkCap" hidden><span>24h ago</span><span>now</span></div>
+</section>
+
+<div class="meta">
+  <div>Updated <span id="updated">—</span></div>
+  <div id="source">Source: —</div>
+</div>
+
+<section class="orders">
+  <h2><span>NDAX limit buys</span><button id="editOrders" type="button">Edit</button></h2>
+  <div id="orderList"><div class="empty">No orders set.</div></div>
+</section>
+
+<div class="src">Prices: Kraken live feed · fallback CoinGecko / Kraken REST. Not financial advice.</div>
+
+<script>
+(() => {
+  'use strict';
+  const PAIRS = { 'BTC/USD': 'USD', 'BTC/CAD': 'CAD' };
+  const state = {
+    USD: { last: null, pct: null, low: null, high: null, ts: 0 },
+    CAD: { last: null, pct: null, low: null, high: null, ts: 0 },
+    mode: 'connecting', source: '—', lastUpdate: 0
+  };
+  const $ = id => document.getElementById(id);
+  const fmt0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+  const fmtPct = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(2) + '%';
+
+  // ---------- Limit orders (stored on the device only) ----------
+  function parseOrders(s) {
+    return (s || '').split(/[,\s]+/).map(x => Number(String(x).replace(/[^0-9.]/g, ''))).filter(n => n > 0).sort((a, b) => b - a);
+  }
+  function loadOrders() {
+    const m = (location.hash + '&' + location.search).match(/orders=([0-9.,%C\s]+)/i);
+    if (m) {
+      const fromUrl = parseOrders(decodeURIComponent(m[1]));
+      if (fromUrl.length) { try { localStorage.setItem('btc.orders', fromUrl.join(',')); } catch (e) {} return fromUrl; }
+    }
+    try { return parseOrders(localStorage.getItem('btc.orders')); } catch (e) { return []; }
+  }
+  let orders = loadOrders();
+  $('editOrders').addEventListener('click', () => {
+    const v = prompt('Your CAD limit buy prices, separated by commas (leave blank to clear):', orders.join(', '));
+    if (v === null) return;
+    orders = parseOrders(v);
+    try { localStorage.setItem('btc.orders', orders.join(',')); } catch (e) {}
+    renderOrders();
+  });
+  function renderOrders() {
+    const list = $('orderList');
+    if (!orders.length) { list.innerHTML = '<div class="empty">No orders set. Tap Edit to add your limit prices.</div>'; return; }
+    const p = state.CAD.last;
+    list.innerHTML = orders.map(o => {
+      let cls = 'order', dist = '—';
+      if (p != null) {
+        const diff = p - o, pct = diff / o * 100;
+        if (diff <= 0) { cls += ' hit'; dist = (diff < 0 ? 'CA$' + fmt0.format(-diff) + ' below · ' : 'At price · ') + 'Filled?'; }
+        else { dist = 'CA$' + fmt0.format(diff) + ' above · ' + pct.toFixed(1) + '%'; if (pct < 2) cls += ' near'; }
+      }
+      return '<div class="' + cls + '"><span class="lvl">CA$' + fmt0.format(o) + '</span><span class="dist">' + dist + '</span></div>';
+    }).join('');
+  }
+
+  // ---------- Rendering ----------
+  function setStatus(mode, source) {
+    state.mode = mode; if (source) state.source = source;
+    const dot = $('dot'); dot.className = 'dot ' + ({ live: 'live', poll: 'poll', off: 'off' }[mode] || '');
+    $('statusText').textContent = ({ live: 'Live', poll: 'Polling', off: 'Offline', connecting: 'Connecting…' })[mode] || mode;
+    $('source').textContent = 'Source: ' + state.source;
+  }
+  function renderCur(cur, prev) {
+    const s = state[cur];
+    if (s.last == null) return;
+    const el = $('price-' + cur);
+    el.querySelector('.num').textContent = fmt0.format(s.last);
+    if (prev != null && prev !== s.last) {
+      el.classList.remove('flash-up', 'flash-down'); void el.offsetWidth;
+      el.classList.add(s.last > prev ? 'flash-up' : 'flash-down');
+      clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('flash-up', 'flash-down'), 450);
+    }
+    const c = $('chg-' + cur);
+    if (s.pct != null && isFinite(s.pct)) { c.textContent = fmtPct(s.pct) + ' 24h'; c.className = 'chg ' + (s.pct > 0 ? 'up' : s.pct < 0 ? 'down' : ''); }
+    const sym = cur === 'USD' ? 'US$' : 'CA$';
+    $('range-' + cur).textContent = (s.low && s.high) ? ('24h range ' + sym + fmt0.format(s.low) + ' – ' + sym + fmt0.format(s.high)) : '\u00a0';
+    if (cur === 'CAD') { renderOrders(); drawSpark(); }
+    document.title = state.USD.last ? ('$' + fmt0.format(state.USD.last) + ' · BTC Live') : 'BTC Live';
+  }
+  function update(cur, d, source) {
+    const s = state[cur], prev = s.last;
+    Object.assign(s, d, { ts: Date.now() });
+    state.lastUpdate = Date.now();
+    renderCur(cur, prev);
+    renderUpdated();
+  }
+  function renderUpdated() {
+    if (!state.lastUpdate) return;
+    const t = new Date(state.lastUpdate);
+    const time = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+    const ago = Math.round((Date.now() - state.lastUpdate) / 1000);
+    $('updated').textContent = time + (ago >= 5 ? ' (' + ago + 's ago)' : '');
+  }
+  setInterval(renderUpdated, 1000);
+
+  // ---------- Sparkline (CAD, 24h, 15-min candles from Kraken) ----------
+  let sparkPts = [];
+  async function loadSpark() {
+    try {
+      const since = Math.floor(Date.now() / 1000) - 24 * 3600;
+      const r = await fetch('https://api.kraken.com/0/public/OHLC?pair=XBTCAD&interval=15&since=' + since, { cache: 'no-store' });
+      const j = await r.json();
+      const k = Object.keys(j.result || {}).find(x => x !== 'last');
+      if (!k) throw new Error('no data');
+      sparkPts = j.result[k].map(c => ({ t: c[0] * 1000, p: Number(c[4]) })).filter(x => x.t >= since * 1000);
+      // If the live feed's 24h % isn't available yet, derive it from the candles.
+      drawSpark();
+    } catch (e) { /* sparkline is optional */ }
+  }
+  function drawSpark() {
+    const svg = $('spark');
+    const pts = sparkPts.slice();
+    if (state.CAD.last != null && pts.length) pts.push({ t: Date.now(), p: state.CAD.last });
+    if (pts.length < 2) { svg.innerHTML = ''; $('sparkCap').hidden = true; return; }
+    const W = 300, H = 56, pad = 3;
+    const ps = pts.map(x => x.p), lo = Math.min(...ps), max = Math.max(...ps);
+    const min = Math.min(lo, ...orders.filter(o => o < lo && o >= lo * 0.97)); // keep a nearby order line in view
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    const X = t => ((t - t0) / Math.max(1, t1 - t0)) * W;
+    const Y = p => pad + (1 - (p - min) / Math.max(1e-9, max - min)) * (H - 2 * pad);
+    const d = pts.map((x, i) => (i ? 'L' : 'M') + X(x.t).toFixed(1) + ' ' + Y(x.p).toFixed(1)).join(' ');
+    const up = pts[pts.length - 1].p >= pts[0].p, col = up ? '#22c55e' : '#ef4444';
+    let lines = '';
+    orders.forEach(o => { if (o >= min && o <= max) lines += '<line x1="0" x2="' + W + '" y1="' + Y(o).toFixed(1) + '" y2="' + Y(o).toFixed(1) + '" stroke="#f7931a" stroke-opacity=".55" stroke-dasharray="3 4" stroke-width="1" vector-effect="non-scaling-stroke"/>'; });
+    svg.innerHTML = '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>'
+      + '<path d="' + d + ' L' + W + ' ' + H + ' L0 ' + H + ' Z" fill="url(#sg)"/>'
+      + lines
+      + '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+    $('sparkCap').hidden = false;
+  }
+
+  // ---------- Live feed: Kraken WebSocket v2 ----------
+  let ws = null, backoff = 1000, reconnectTimer = null, lastMsg = 0, pollTimer = null;
+  function connect() {
+    clearTimeout(reconnectTimer);
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    try { ws = new WebSocket('wss://ws.kraken.com/v2'); } catch (e) { scheduleReconnect(); return; }
+    const sock = ws;
+    sock.onopen = () => {
+      backoff = 1000; lastMsg = Date.now();
+      sock.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: Object.keys(PAIRS) } }));
+    };
+    sock.onmessage = ev => {
+      if (sock !== ws) return;
+      lastMsg = Date.now();
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.channel !== 'ticker' || !Array.isArray(m.data)) return;
+      for (const t of m.data) {
+        const cur = PAIRS[t.symbol]; if (!cur) continue;
+        update(cur, { last: t.last, pct: t.change_pct, low: t.low, high: t.high }, 'ws');
+      }
+      if (state.mode !== 'live') { setStatus('live', 'Kraken (live WebSocket)'); stopPolling(); }
+    };
+    sock.onclose = () => { if (sock === ws) { ws = null; startPolling(); scheduleReconnect(); } };
+    sock.onerror = () => { try { sock.close(); } catch (e) {} };
+  }
+  function scheduleReconnect() {
+    clearTimeout(reconnectTimer);
+    if (document.hidden) return; // reconnect when the app comes back to the foreground
+    reconnectTimer = setTimeout(connect, backoff);
+    backoff = Math.min(backoff * 2, 30000);
+  }
+  // Watchdog: Kraken sends heartbeats every second; 20s of silence means the socket is dead.
+  setInterval(() => {
+    if (ws && ws.readyState === 1 && Date.now() - lastMsg > 20000) { try { ws.close(); } catch (e) {} ws = null; startPolling(); scheduleReconnect(); }
+  }, 5000);
+
+  // ---------- Fallback polling ----------
+  async function pollOnce() {
+    try {
+      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,cad&include_24hr_change=true', { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const b = (await r.json()).bitcoin;
+      if (!b || !b.usd) throw new Error('bad');
+      update('USD', { last: b.usd, pct: b.usd_24h_change });
+      update('CAD', { last: b.cad, pct: b.cad_24h_change });
+      if (state.mode !== 'live') setStatus('poll', 'CoinGecko (every 30s)');
+      return;
+    } catch (e) {}
+    try {
+      const r = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD,XBTCAD', { cache: 'no-store' });
+      const j = await r.json();
+      for (const [k, v] of Object.entries(j.result || {})) {
+        const cur = /CAD$/.test(k) ? 'CAD' : /USD$/.test(k) ? 'USD' : null; if (!cur) continue;
+        const last = Number(v.c[0]);
+        update(cur, { last, low: Number(v.l[1]), high: Number(v.h[1]) });
+      }
+      if (state.mode !== 'live') setStatus('poll', 'Kraken REST (every 30s)');
+    } catch (e) { if (state.mode !== 'live') setStatus('off'); }
+  }
+  function startPolling() {
+    if (pollTimer) return;
+    if (state.mode === 'live') setStatus('poll', 'Reconnecting… (polling meanwhile)');
+    pollOnce(); pollTimer = setInterval(pollOnce, 30000);
+  }
+  function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
+
+  // ---------- Lifecycle ----------
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      // iOS freezes/kills sockets in the background: check and reconnect immediately.
+      if (!ws || ws.readyState !== 1 || Date.now() - lastMsg > 5000) {
+        if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+        backoff = 1000; connect(); pollOnce();
+      }
+      loadSpark();
+    }
+  });
+  window.addEventListener('online', () => { backoff = 1000; connect(); });
+  window.addEventListener('pageshow', e => { if (e.persisted) { backoff = 1000; connect(); } });
+
+  renderOrders();
+  connect();
+  loadSpark(); setInterval(loadSpark, 5 * 60 * 1000);
+  // If the socket hasn't delivered anything in 6s, show polled prices meanwhile.
+  setTimeout(() => { if (state.mode !== 'live') startPolling(); }, 6000);
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
