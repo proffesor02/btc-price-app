@@ -1,6 +1,6 @@
 // App-shell cache only. Price data is never cached.
-const CACHE = 'btc-live-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon-32.png'];
+const CACHE = 'btc-live-v2';
+const SHELL = ['./', './index.html', './portfolio.js', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon-32.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

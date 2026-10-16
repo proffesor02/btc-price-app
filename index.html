@@ -67,6 +67,37 @@
   .order.near:not(.hit) { border-color: rgba(247,147,26,.35); }
   .empty { color: var(--muted); font-size: 14px; }
   .src { text-align: center; font-size: 11px; color: #5d6577; margin-top: 18px; }
+
+  .tabs { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin-bottom: 14px; }
+  .tabs button { flex: 1; background: none; border: 0; color: var(--muted); font-size: 15px; font-weight: 650; padding: 9px 0; border-radius: 10px; cursor: pointer; }
+  .tabs button.on { background: #232836; color: var(--text); }
+  [hidden] { display: none !important; }
+  .tot { font-size: clamp(34px, 11vw, 48px); font-weight: 750; letter-spacing: -1px; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tot .cur { font-size: .5em; color: var(--muted); font-weight: 600; margin-right: 4px; }
+  .g { font-variant-numeric: tabular-nums; font-weight: 650; }
+  .g.up { color: var(--up); } .g.down { color: var(--down); }
+  .grp { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 2px 8px; }
+  .grp .label { font-size: 13px; }
+  .grp .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .hold { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 13px 14px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+  .hold .r { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .hold .n { font-weight: 700; font-size: 16px; }
+  .hold .val { font-weight: 700; font-size: 17px; }
+  .hold .s { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .pill { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(138,147,166,.15); color: var(--muted); margin-left: 6px; vertical-align: 2px; }
+  .pill.open { color: var(--up); background: rgba(34,197,94,.13); }
+  .btns { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { flex: 1; background: #232836; color: var(--text); border: 1px solid var(--line); border-radius: 12px; font-size: 15px; font-weight: 650; padding: 12px; cursor: pointer; }
+  .btn.pri { background: var(--btc); color: #111; border-color: var(--btc); }
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; z-index: 10; }
+  .sheet .box { background: var(--card); width: 100%; max-height: 90dvh; overflow: auto; border-radius: 20px 20px 0 0; padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px); -webkit-user-select: text; user-select: text; }
+  .sheet h3 { margin: 0 0 12px; font-size: 18px; }
+  .sheet fieldset { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 12px; padding: 10px 12px; }
+  .sheet legend { color: var(--muted); font-size: 13px; font-weight: 650; padding: 0 4px; }
+  .sheet label { display: block; font-size: 13px; color: var(--muted); margin: 6px 0 3px; }
+  .sheet input, .sheet select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 16px; }
+  .sheet .two { display: flex; gap: 8px; } .sheet .two > div { flex: 1; }
+  .sheet .hint { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -74,6 +105,8 @@
   <div class="brand"><img src="icons/apple-touch-icon.png" alt="">BTC Live</div>
   <div class="status"><span id="dot" class="dot"></span><span id="statusText">Connecting…</span></div>
 </header>
+<nav class="tabs"><button id="tabPrice" class="on" type="button">Price</button><button id="tabPort" type="button">Portfolio</button></nav>
+<div id="viewPrice">
 
 <section class="card" id="card-USD">
   <div class="row1"><span class="label">Bitcoin · USD</span><span class="chg" id="chg-USD">—</span></div>
@@ -100,6 +133,27 @@
 </section>
 
 <div class="src">Prices: Kraken live feed · fallback CoinGecko / Kraken REST. Not financial advice.</div>
+</div>
+
+<div id="viewPort" hidden>
+  <section class="card">
+    <div class="row1"><span class="label">Total · CAD</span><span class="chg" id="pDay">—</span></div>
+    <div class="tot"><span class="cur">CA$</span><span id="pTotal">—</span></div>
+    <div class="sub" id="pGain">&nbsp;</div>
+  </section>
+  <div class="grp"><span class="label">TFSA</span><span class="v" id="pTfsa">—</span></div>
+  <div id="pTfsaList"></div>
+  <div class="grp"><span class="label">Bitcoin · Trezor</span><span class="v" id="pBtc">—</span></div>
+  <div id="pBtcList"></div>
+  <div class="btns"><button class="btn pri" id="pAddBuy" type="button">+ Add buy</button><button class="btn" id="pEdit" type="button">Edit holdings</button></div>
+  <div class="meta" style="margin-top:16px">
+    <div>Stocks updated <span id="pUpd">—</span></div>
+    <div id="pFx">USD/CAD —</div>
+    <div id="pSrc">&nbsp;</div>
+  </div>
+  <div class="src">Stock quotes are ~15 min delayed (TradingView). BTC live from Kraken. Holdings are stored only on this phone. Not financial advice.</div>
+</div>
+<div class="sheet" id="sheet" hidden><div class="box" id="sheetBox"></div></div>
 
 <script>
 (() => {
@@ -110,6 +164,7 @@
     CAD: { last: null, pct: null, low: null, high: null, ts: 0 },
     mode: 'connecting', source: '—', lastUpdate: 0
   };
+  window.btcState = state;
   const $ = id => document.getElementById(id);
   const fmt0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
   const fmtPct = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(2) + '%';
@@ -314,5 +369,6 @@
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
+<script src="portfolio.js"></script>
 </body>
 </html>

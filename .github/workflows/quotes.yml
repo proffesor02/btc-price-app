@@ -1,0 +1,23 @@
+name: quotes snapshot (fallback)
+on:
+  schedule: [{ cron: '*/15 13-22 * * 1-5' }]
+  workflow_dispatch:
+permissions: { contents: write }
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          python3 - <<'PY'
+          import json, urllib.request, time
+          def q(sym):
+              r = urllib.request.Request(f'https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=1d', headers={'User-Agent':'Mozilla/5.0'})
+              m = json.load(urllib.request.urlopen(r, timeout=20))['chart']['result'][0]['meta']
+              p, pc = m['regularMarketPrice'], m.get('chartPreviousClose') or m.get('previousClose')
+              return {'price': p, 'pct': (p/pc-1)*100 if pc else None}
+          json.dump({'time': int(time.time()), 'mstr': q('MSTR'), 'fbtc': q('FBTC.TO')}, open('quotes.json','w'))
+          PY
+          cat quotes.json
+          git init -q && git checkout -q -b quotes && git add quotes.json
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm "quotes $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" quotes
